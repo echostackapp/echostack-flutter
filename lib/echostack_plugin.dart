@@ -145,4 +145,133 @@ class EchoStackPlugin {
       'parameters': parameters ?? {},
     });
   }
+
+  /// Pass EchoStack attribution data to RevenueCat for campaign-based paywall targeting.
+  /// Call after both EchoStack and RevenueCat Purchases SDKs are configured.
+  ///
+  /// Sets subscriber attributes so RevenueCat can segment users by acquisition source:
+  /// - `$echoStackId` — EchoStack device ID
+  /// - `$mediaSource` — attributed ad network (e.g., "meta", "google")
+  /// - `$campaign` — campaign name
+  /// - `$adGroup` — ad set / ad group ID
+  /// - `$ad` — ad creative ID
+  /// - `$keyword` — search keyword (if applicable)
+  ///
+  /// Requires the `purchases_flutter` package as a dependency.
+  /// The host app must pass the `setAttributes` function since Dart does not
+  /// support optional dynamic imports.
+  ///
+  /// Example:
+  /// ```dart
+  /// import 'package:purchases_flutter/purchases_flutter.dart';
+  ///
+  /// await EchoStackPlugin.syncWithRevenueCat(
+  ///   setAttributes: (attrs) => Purchases.setAttributes(attrs),
+  /// );
+  /// ```
+  ///
+  /// TODO(partnership): When EchoStack becomes a recognized RevenueCat integration partner,
+  /// replace custom attributes with Purchases.setEchoStackAttributionParams()
+  static Future<void> syncWithRevenueCat({
+    required Future<void> Function(Map<String, String> attributes) setAttributes,
+  }) async {
+    try {
+      final attributes = <String, String>{};
+
+      final echoStackId = await getEchoStackId();
+      if (echoStackId != null) {
+        attributes[r'$echoStackId'] = echoStackId;
+      }
+
+      final attribution = await getAttributionParams();
+      if (attribution != null) {
+        if (attribution.network != null) {
+          attributes[r'$mediaSource'] = attribution.network!;
+        }
+        if (attribution.campaignName != null) {
+          attributes[r'$campaign'] = attribution.campaignName!;
+        }
+        if (attribution.adsetId != null) {
+          attributes[r'$adGroup'] = attribution.adsetId!;
+        }
+        if (attribution.adId != null) {
+          attributes[r'$ad'] = attribution.adId!;
+        }
+        if (attribution.keyword != null) {
+          attributes[r'$keyword'] = attribution.keyword!;
+        }
+      }
+
+      if (attributes.isEmpty) {
+        return;
+      }
+
+      // TODO(partnership): Replace with Purchases.setEchoStackAttributionParams(attributes)
+      await setAttributes(attributes);
+    } catch (_) {
+      // Never crash the host app — RevenueCat sync is best-effort
+    }
+  }
+
+  /// Sync EchoStack attribution with Superwall for campaign-targeted paywalls.
+  /// Call after both SDKs are configured, before the first
+  /// `Superwall.shared.register()` call.
+  ///
+  /// Sets the following Superwall user attributes:
+  /// - `echostack_id`: The unique device installation ID.
+  /// - Attribution parameters (network, campaign_id, campaign_name, etc.)
+  ///   when available.
+  ///
+  /// Requires the `superwallkit_flutter` package to be installed in the host
+  /// app. The host app must pass the Superwall `setUserAttributes` function
+  /// since Dart does not support optional dynamic imports.
+  ///
+  /// Example:
+  /// ```dart
+  /// import 'package:superwallkit_flutter/superwallkit_flutter.dart';
+  ///
+  /// await EchoStackPlugin.syncWithSuperwall(
+  ///   setUserAttributes: (attrs) => Superwall.shared.setUserAttributes(attrs),
+  /// );
+  /// ```
+  ///
+  /// TODO(partnership): When EchoStack is a recognized Superwall partner,
+  /// use `Superwall.shared.setIntegrationAttribute()` instead of
+  /// `setUserAttributes()`.
+  static Future<void> syncWithSuperwall({
+    required void Function(Map<String, dynamic> attributes) setUserAttributes,
+  }) async {
+    try {
+      final echoStackId = await getEchoStackId();
+      if (echoStackId == null) {
+        return;
+      }
+
+      // TODO(partnership): Replace with Superwall.shared.setIntegrationAttribute(IntegrationAttribute.echoStackId, echoStackId)
+      setUserAttributes({'echostack_id': echoStackId});
+
+      // Forward attribution parameters if available
+      final attribution = await getAttributionParams();
+      if (attribution != null) {
+        // TODO(partnership): Replace with Superwall.shared.setIntegrationAttribute() calls
+        final attrs = <String, dynamic>{};
+        if (attribution.network != null) attrs['network'] = attribution.network;
+        if (attribution.campaignId != null) {
+          attrs['campaign_id'] = attribution.campaignId;
+        }
+        if (attribution.campaignName != null) {
+          attrs['campaign_name'] = attribution.campaignName;
+        }
+        if (attribution.adsetId != null) attrs['adset_id'] = attribution.adsetId;
+        if (attribution.adId != null) attrs['ad_id'] = attribution.adId;
+        if (attribution.keyword != null) attrs['keyword'] = attribution.keyword;
+        attrs['match_type'] = attribution.matchType;
+        attrs['confidence'] = attribution.confidence;
+
+        setUserAttributes(attrs);
+      }
+    } catch (_) {
+      // Never crash the host app — Superwall sync is best-effort
+    }
+  }
 }
