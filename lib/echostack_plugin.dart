@@ -33,6 +33,20 @@ class EventType {
   static const String subscribe = 'subscribe';
   static const String adImpression = 'ad_impression';
   static const String adClick = 'ad_click';
+  static const String login = 'login';
+  static const String signUp = 'sign_up';
+  static const String register = 'register';
+  static const String addToCart = 'add_to_cart';
+  static const String addToWishlist = 'add_to_wishlist';
+  static const String initiateCheckout = 'initiate_checkout';
+  static const String levelStart = 'level_start';
+  static const String levelComplete = 'level_complete';
+  static const String tutorialComplete = 'tutorial_complete';
+  static const String search = 'search';
+  static const String viewItem = 'view_item';
+  static const String viewContent = 'view_content';
+  static const String share = 'share';
+  static const String custom = 'custom';
 }
 
 /// Attribution result from the matching engine.
