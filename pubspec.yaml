@@ -1,6 +1,6 @@
 name: echostack_plugin
 description: EchoStack mobile attribution SDK for Flutter. Thin wrapper over native iOS and Android SDKs.
-version: 1.0.0
+version: 1.2.0
 homepage: https://echostack.app
 repository: https://github.com/echostack/echostack-flutter
 
